@@ -58,3 +58,7 @@ sysinfo.txt
 # Crashlytics generated file
 crashlytics-build.properties
 
+Example~/Library/
+Example~/obj/
+Example~/Logs/
+Example~/.vscode/
