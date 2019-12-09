@@ -30,10 +30,10 @@ Material:
   stringTagMap: {}
   disabledShaderPasses:
   - DistortionVectors
+  - MOTIONVECTORS
   - TransparentDepthPrepass
   - TransparentDepthPostpass
   - TransparentBackface
-  - MOTIONVECTORS
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
@@ -42,8 +42,8 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _BaseColorMap:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
+        m_Texture: {fileID: 2800000, guid: 1d12fa396a3563b41b9ae11b0fb0b986, type: 3}
+        m_Scale: {x: 75, y: 75}
         m_Offset: {x: 0, y: 0}
     - _BaseMap:
         m_Texture: {fileID: 2800000, guid: cbb3b18c273ad634b9ef2dedef41c888, type: 3}
@@ -106,7 +106,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MainTex:
-        m_Texture: {fileID: 0}
+        m_Texture: {fileID: 2800000, guid: 1d12fa396a3563b41b9ae11b0fb0b986, type: 3}
         m_Scale: {x: 75, y: 75}
         m_Offset: {x: 0, y: 0}
     - _MaskMap:
@@ -218,6 +218,7 @@ Material:
     - _EnableBlendModePreserveSpecularLighting: 1
     - _EnableFogOnTransparent: 1
     - _EnableGeometricSpecularAA: 0
+    - _EnableSpecularOcclusion: 0
     - _EnergyConservingSpecularColor: 1
     - _EnvironmentReflections: 1
     - _GlossMapScale: 1
@@ -233,7 +234,7 @@ Material:
     - _HeightPoMAmplitude: 2
     - _HeightTessAmplitude: 2
     - _HeightTessCenter: 0.5
-    - _InvTilingScale: 1
+    - _InvTilingScale: 0.013333334
     - _Ior: 1.5
     - _IridescenceMask: 1
     - _IridescenceThickness: 1
@@ -281,6 +282,7 @@ Material:
     - _TexWorldScale: 1
     - _TexWorldScaleEmissive: 1
     - _Thickness: 1
+    - _ThicknessMultiplier: 1
     - _TransmissionEnable: 1
     - _TransparentBackfaceEnable: 0
     - _TransparentCullMode: 2
@@ -303,7 +305,7 @@ Material:
     m_Colors:
     - _BaseColor: {r: 0.2, g: 0.2, b: 0.2, a: 1}
     - _BaseColorMap_MipInfo: {r: 0, g: 0, b: 0, a: 0}
-    - _Color: {r: 0.2, g: 0.2, b: 0.2, a: 1}
+    - _Color: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
     - _DiffusionProfileAsset: {r: 0, g: 0, b: 0, a: 0}
     - _DoubleSidedConstants: {r: 1, g: 1, b: -1, a: 0}
     - _EmissionColor: {r: 1, g: 1, b: 1, a: 1}

@@ -4,6 +4,7 @@ using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Transforms;
+using UnityEngine.Profiling;
 
 public class StressTestSystem : ComponentSystem
 {
@@ -22,8 +23,10 @@ public class StressTestSystem : ComponentSystem
     }
 
     protected override void OnUpdate() {
-        var random = new Random((uint)UnityEngine.Time.frameCount);
+        var random = new Random((uint)Time.ElapsedTime);
 
+
+        Profiler.BeginSample("Spawn");
         Entities.With(CharacterSpawnerQuery).ForEach((Entity ent, ref CharacterSpawner spawner) => {
             for (int i = 0; i < spawner.Count; i++) {
                 var character = EntityManager.Instantiate(spawner.EntityPrefab);
@@ -34,8 +37,9 @@ public class StressTestSystem : ComponentSystem
 
             EntityManager.AddComponentData(ent, new InitedTag());
         });
+        Profiler.EndSample();
 
-
+        Profiler.BeginSample("UpdateDirection");
         Entities.ForEach((Entity ent,ref StressTestComponent test ,ref CharacterControllerInternalData internalData) => {
             test.cooldown -= Time.DeltaTime;
 
@@ -48,5 +52,6 @@ public class StressTestSystem : ComponentSystem
                 internalData.Input.Movement = new float2(0, 1);
             }
         });
+        Profiler.EndSample();
     }
 }
