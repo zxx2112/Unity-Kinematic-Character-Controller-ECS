@@ -4,6 +4,7 @@ using UnityEngine.InputSystem;
 
 [AlwaysUpdateSystem]
 [UpdateBefore(typeof(CharacterControllerOneToManyInputSystem))]
+//[DisableAutoCreation]
 class DemoInputGatheringSystem : ComponentSystem,
     InputActions.ICharacterControllerActions
 {

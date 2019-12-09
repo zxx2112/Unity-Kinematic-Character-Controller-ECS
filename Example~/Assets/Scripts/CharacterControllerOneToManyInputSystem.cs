@@ -18,6 +18,7 @@ using static Unity.Physics.PhysicsStep;
 // This input system simply applies the same character input 
 // information to every character controller in the scene
 [UpdateAfter(typeof(ExportPhysicsWorld)), UpdateBefore(typeof(CharacterControllerSystem))]
+//[DisableAutoCreation]
 public class CharacterControllerOneToManyInputSystem : ComponentSystem
 {
     EntityQuery m_CharacterControllerInputQuery; 
