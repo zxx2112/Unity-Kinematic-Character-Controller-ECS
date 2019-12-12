@@ -7,5 +7,12 @@
   "keywords": [],
   "dependencies": {
     "com.unity.physics": "0.2.5-preview"
-  }
+  },
+  "samples":[
+    {
+      "displayName": "Example",
+      "description": "",
+      "path": "Example~/Assets/ThirdPersonController"
+    }
+  ]
 }
