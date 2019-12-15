@@ -3,9 +3,13 @@ using System.Collections.Generic;
 using Unity.Entities;
 using Unity.Transforms;
 using UnityEngine;
+using Unity.Mathematics;
 
 public class EntityTracker : MonoBehaviour, IReceiveEntity
 {
+    [SerializeField] bool TrackPosition;
+    [SerializeField] bool TrackRotation;
+
     private Entity EntityToTrack = Entity.Null;
     public void SetReceivedEntity(Entity entity)
     {
@@ -20,9 +24,18 @@ public class EntityTracker : MonoBehaviour, IReceiveEntity
             try
             {
                 var entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
+                //transform.position = entityManager.GetComponentData<Translation>(EntityToTrack).Value;
+                //transform.rotation = entityManager.GetComponentData<Rotation>(EntityToTrack).Value;
+                var localToWorld = entityManager.GetComponentData<LocalToWorld>(EntityToTrack);
+                var worldPosition = localToWorld.Position;
+                if (float.IsNaN(worldPosition.x) || float.IsNaN(worldPosition.y) || float.IsNaN(worldPosition.z)) {
+                    worldPosition = float3.zero;
+                }
 
-                transform.position = entityManager.GetComponentData<Translation>(EntityToTrack).Value;
-                transform.rotation = entityManager.GetComponentData<Rotation>(EntityToTrack).Value;
+                if (TrackPosition)
+                    transform.position = worldPosition;
+                if(TrackRotation)
+                    transform.rotation = localToWorld.Rotation;
             }
             catch
             {

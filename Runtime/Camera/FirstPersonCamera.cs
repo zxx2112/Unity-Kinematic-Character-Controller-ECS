@@ -4,11 +4,12 @@ using UnityEngine;
 
 public class FirstPersonCamera : MonoBehaviour
 {
-    [SerializeField] private Transform player;
+    [SerializeField] private Transform target;
     [SerializeField] private bool syncPosition;
     [SerializeField] private float yaw;
     [SerializeField] private float pitch;
     [SerializeField] private float pitchSpeed = 1;
+    [SerializeField] private bool interpolate = false;
     [SerializeField] private float interpolateSpeed = 1;
 
     void Start()
@@ -25,6 +26,7 @@ public class FirstPersonCamera : MonoBehaviour
         }
 
         transform.rotation = Quaternion.Euler(pitch, yaw, 0);
+
     }
 
     private void LateUpdate() {
@@ -36,18 +38,19 @@ public class FirstPersonCamera : MonoBehaviour
     
     //获取Y轴旋转
     private float GetYaw() {
-        if (player == null) return 0;
+        if (target == null) return 0;
 
-        var ret = player.eulerAngles.y;
-        ret = Mathf.LerpAngle(yaw, ret,Mathf.Clamp01(Time.deltaTime * interpolateSpeed));
+        var ret = target.eulerAngles.y;
+        if(interpolate)
+            ret = Mathf.LerpAngle(yaw, ret,Mathf.Clamp01(Time.deltaTime * interpolateSpeed));
 
         return ret;
     }
 
     private Vector3? GetPlayerPosition() {
-        if (player == null) return null;
+        if (target == null) return null;
 
-        return player.position;
+        return target.position;
     }
 
     private float GetPitch() {
