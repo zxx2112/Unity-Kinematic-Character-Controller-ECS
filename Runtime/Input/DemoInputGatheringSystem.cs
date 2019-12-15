@@ -6,7 +6,8 @@ using UnityEngine.InputSystem;
 [UpdateBefore(typeof(CharacterControllerOneToManyInputSystem))]
 //[DisableAutoCreation]
 class DemoInputGatheringSystem : ComponentSystem,
-    InputActions.ICharacterControllerActions
+    InputActions.ICharacterControllerActions,
+    InputActions.IVehicleActions
 {
     InputActions m_InputActions;
 
@@ -29,6 +30,7 @@ class DemoInputGatheringSystem : ComponentSystem,
     {
         m_InputActions = new InputActions();
         m_InputActions.CharacterController.SetCallbacks(this);
+        m_InputActions.Vehicle.SetCallbacks(this);
 
         m_CharacterControllerInputQuery = GetEntityQuery(typeof(CharacterControllerInput));
     }
@@ -45,7 +47,7 @@ class DemoInputGatheringSystem : ComponentSystem,
 
         m_CharacterControllerInputQuery.SetSingleton(new CharacterControllerInput
         {
-            //Looking = m_CharacterLooking,
+            Looking = m_CharacterLooking,
             Movement = m_CharacterMovement,
             Jumped = m_CharacterJumped ? 1 : 0
         });
@@ -59,4 +61,10 @@ class DemoInputGatheringSystem : ComponentSystem,
     void InputActions.ICharacterControllerActions.OnLook(InputAction.CallbackContext context) => m_CharacterLooking = context.ReadValue<Vector2>();
     void InputActions.ICharacterControllerActions.OnFire(InputAction.CallbackContext context) => m_CharacterFiring = context.ReadValue<float>();
     void InputActions.ICharacterControllerActions.OnJump(InputAction.CallbackContext context) { if (context.started) m_CharacterJumped = true; }
+
+    void InputActions.IVehicleActions.OnLook(InputAction.CallbackContext context) => m_VehicleLooking = context.ReadValue<Vector2>();
+    void InputActions.IVehicleActions.OnSteering(InputAction.CallbackContext context) => m_VehicleSteering = context.ReadValue<Vector2>();
+    void InputActions.IVehicleActions.OnThrottle(InputAction.CallbackContext context) => m_VehicleThrottle = context.ReadValue<float>();
+    void InputActions.IVehicleActions.OnPrevious(InputAction.CallbackContext context) { if (context.started) m_VehicleChanged = -1; }
+    void InputActions.IVehicleActions.OnNext(InputAction.CallbackContext context) { if (context.started) m_VehicleChanged = 1; }
 }

@@ -32,14 +32,13 @@ public struct CharacterControllerComponentData : IComponentData
 public struct CharacterControllerInput : IComponentData
 {
     public float2 Movement;
-    //public float2 Looking;
+    public float2 Looking;
     public int Jumped;
-    public float3 LookInputVector;
 }
 
 public struct CharacterControllerInternalData : IComponentData
 {
-    //public float CurrentRotationAngle;
+    public float CurrentRotationAngle;
     public CharacterSupportState SupportedState;
     public float3 UnsupportedVelocity;
     public float3 LinearVelocity;
@@ -163,8 +162,6 @@ public class CharacterControllerSystem : JobComponentSystem
                 var position = chunkTranslationData[i];
                 var rotation = chunkRotationData[i];
 
-                var _transientRotation = rotation.Value;
-
                 // Collision filter must be valid
                 Assert.IsTrue(collider.ColliderPtr->Filter.IsValid);
 
@@ -199,12 +196,12 @@ public class CharacterControllerSystem : JobComponentSystem
 
                 // User input
                 float3 desiredVelocity = ccInternalData.LinearVelocity;
-                HandleUserInput(ccComponentData, stepInput.Up, surfaceVelocity, DeltaTime,ref ccInternalData, ref desiredVelocity,ref _transientRotation);
+                HandleUserInput(ccComponentData, stepInput.Up, surfaceVelocity, ref ccInternalData, ref desiredVelocity);
 
                 // Calculate actual velocity with respect to surface
                 if (ccInternalData.SupportedState == CharacterSupportState.Supported)
                 {
-                    CalculateMovement(_transientRotation, stepInput.Up, ccInternalData.IsJumping,
+                    CalculateMovement(ccInternalData.CurrentRotationAngle, stepInput.Up, ccInternalData.IsJumping,
                         ccInternalData.LinearVelocity, desiredVelocity, surfaceNormal, surfaceVelocity, out ccInternalData.LinearVelocity);
                 }
                 else
@@ -218,8 +215,7 @@ public class CharacterControllerSystem : JobComponentSystem
 
                 // Write back and orientation integration
                 position.Value = transform.pos;
-                //rotation.Value = quaternion.AxisAngle(up, ccInternalData.CurrentRotationAngle);
-                rotation.Value = _transientRotation;
+                rotation.Value = quaternion.AxisAngle(up, ccInternalData.CurrentRotationAngle);
 
                 // Write back to chunk data
                 {
@@ -232,8 +228,8 @@ public class CharacterControllerSystem : JobComponentSystem
             DeferredImpulseWriter.EndForEachIndex();
         }
 
-        private void HandleUserInput(CharacterControllerComponentData ccComponentData, float3 up, float3 surfaceVelocity,float deltaTime, 
-            ref CharacterControllerInternalData ccInternalData, ref float3 linearVelocity,ref quaternion currentRotation)
+        private void HandleUserInput(CharacterControllerComponentData ccComponentData, float3 up, float3 surfaceVelocity, 
+            ref CharacterControllerInternalData ccInternalData, ref float3 linearVelocity)
         {
             // Reset jumping state and unsupported velocity
             if (ccInternalData.SupportedState == CharacterSupportState.Supported)
@@ -256,7 +252,7 @@ public class CharacterControllerSystem : JobComponentSystem
                 if (haveInput)
                 {
                     float3 localSpaceMovement = forward * vertical + right * horizontal;
-                    float3 worldSpaceMovement = math.rotate(currentRotation, localSpaceMovement);
+                    float3 worldSpaceMovement = math.rotate(quaternion.AxisAngle(up, ccInternalData.CurrentRotationAngle), localSpaceMovement);
                     requestedMovementDirection = math.normalize(worldSpaceMovement);
                 }
                 shouldJump = jumpRequested && ccInternalData.SupportedState == CharacterSupportState.Supported;
@@ -264,17 +260,11 @@ public class CharacterControllerSystem : JobComponentSystem
 
             // Turning
             {
-                //float horizontal = ccInternalData.Input.Looking.x;
-                //bool haveInput = (math.abs(horizontal) > float.Epsilon);
-                //if (haveInput)
-                //{
-                //    ccInternalData.CurrentRotationAngle += horizontal * ccComponentData.RotationSpeed * DeltaTime;
-                //}
-
-                if(math.length(ccInternalData.Input.LookInputVector) > 0f) {
-                    float OrientationSharpness = 10f;
-                    quaternion smoothedInputRotation = math.slerp(currentRotation, quaternion.LookRotation(ccInternalData.Input.LookInputVector,up), 1 - Mathf.Exp(-OrientationSharpness * deltaTime));
-                    currentRotation = smoothedInputRotation;
+                float horizontal = ccInternalData.Input.Looking.x;
+                bool haveInput = (math.abs(horizontal) > float.Epsilon);
+                if (haveInput)
+                {
+                    ccInternalData.CurrentRotationAngle += horizontal * ccComponentData.RotationSpeed * DeltaTime;
                 }
             }
 
@@ -298,10 +288,10 @@ public class CharacterControllerSystem : JobComponentSystem
             }
         }
 
-        private void CalculateMovement(quaternion currentRotation, float3 up, bool isJumping,
+        private void CalculateMovement(float currentRotationAngle, float3 up, bool isJumping,
             float3 currentVelocity, float3 desiredVelocity, float3 surfaceNormal, float3 surfaceVelocity, out float3 linearVelocity)
         {
-            float3 forward = math.forward(currentRotation);
+            float3 forward = math.forward(quaternion.AxisAngle(up, currentRotationAngle));
 
             Rotation surfaceFrame;
             float3 binorm;
@@ -355,7 +345,6 @@ public class CharacterControllerSystem : JobComponentSystem
 
         public void Execute()
         {
-            return;
             int index = 0;
             int maxIndex = DeferredImpulseReader.ForEachCount;
             DeferredImpulseReader.BeginForEachIndex(index++);
@@ -461,7 +450,6 @@ public class CharacterControllerSystem : JobComponentSystem
 
         inputDeps = applyJob.Schedule(inputDeps);
         var disposeHandle = deferredImpulses.Dispose(inputDeps);
-
 
         // Must finish all jobs before physics step end
         m_EndFramePhysicsSystem.HandlesToWaitFor.Add(disposeHandle);

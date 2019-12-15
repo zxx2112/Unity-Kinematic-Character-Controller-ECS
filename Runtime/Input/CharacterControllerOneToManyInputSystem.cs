@@ -36,7 +36,7 @@ public class CharacterControllerOneToManyInputSystem : ComponentSystem
             (ref CharacterControllerInternalData ccData) =>
             {
                 ccData.Input.Movement = input.Movement;
-                //ccData.Input.Looking = input.Looking;
+                ccData.Input.Looking = input.Looking;
                 ccData.Input.Jumped = input.Jumped;
             }
         );

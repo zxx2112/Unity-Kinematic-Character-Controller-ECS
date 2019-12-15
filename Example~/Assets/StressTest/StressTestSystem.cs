@@ -1,57 +1,57 @@
-﻿using Unity.Burst;
-using Unity.Collections;
-using Unity.Entities;
-using Unity.Jobs;
-using Unity.Mathematics;
-using Unity.Transforms;
-using UnityEngine.Profiling;
+﻿//using Unity.Burst;
+//using Unity.Collections;
+//using Unity.Entities;
+//using Unity.Jobs;
+//using Unity.Mathematics;
+//using Unity.Transforms;
+//using UnityEngine.Profiling;
 
-public class StressTestSystem : ComponentSystem
-{
-    public struct InitedTag : ISystemStateComponentData
-    {
+//public class StressTestSystem : ComponentSystem
+//{
+//    public struct InitedTag : ISystemStateComponentData
+//    {
 
-    }
+//    }
 
-    EntityQuery CharacterSpawnerQuery;
+//    EntityQuery CharacterSpawnerQuery;
 
-    float minCooldown = 3;
-    float maxCooldown = 5;
+//    float minCooldown = 3;
+//    float maxCooldown = 5;
 
-    protected override void OnCreate() {
-        CharacterSpawnerQuery = GetEntityQuery(typeof(CharacterSpawner),ComponentType.Exclude<InitedTag>());
-    }
+//    protected override void OnCreate() {
+//        CharacterSpawnerQuery = GetEntityQuery(typeof(CharacterSpawner),ComponentType.Exclude<InitedTag>());
+//    }
 
-    protected override void OnUpdate() {
-        var random = new Random((uint)Time.ElapsedTime);
+//    protected override void OnUpdate() {
+//        var random = new Random((uint)Time.ElapsedTime);
 
 
-        Profiler.BeginSample("Spawn");
-        Entities.With(CharacterSpawnerQuery).ForEach((Entity ent, ref CharacterSpawner spawner) => {
-            for (int i = 0; i < spawner.Count; i++) {
-                var character = EntityManager.Instantiate(spawner.EntityPrefab);
-                var randomPosition = random.NextFloat3(new float3(-1,0,-1),new float3(1,0,1)) * spawner.AreaSize/2;
-                randomPosition.y = 1.5f;
-                EntityManager.SetComponentData(character, new Translation { Value = randomPosition });
-            }
+//        Profiler.BeginSample("Spawn");
+//        Entities.With(CharacterSpawnerQuery).ForEach((Entity ent, ref CharacterSpawner spawner) => {
+//            for (int i = 0; i < spawner.Count; i++) {
+//                var character = EntityManager.Instantiate(spawner.EntityPrefab);
+//                var randomPosition = random.NextFloat3(new float3(-1,0,-1),new float3(1,0,1)) * spawner.AreaSize/2;
+//                randomPosition.y = 1.5f;
+//                EntityManager.SetComponentData(character, new Translation { Value = randomPosition });
+//            }
 
-            EntityManager.AddComponentData(ent, new InitedTag());
-        });
-        Profiler.EndSample();
+//            EntityManager.AddComponentData(ent, new InitedTag());
+//        });
+//        Profiler.EndSample();
 
-        Profiler.BeginSample("UpdateDirection");
-        Entities.ForEach((Entity ent,ref StressTestComponent test ,ref CharacterControllerInternalData internalData) => {
-            test.cooldown -= Time.DeltaTime;
+//        Profiler.BeginSample("UpdateDirection");
+//        Entities.ForEach((Entity ent,ref StressTestComponent test ,ref CharacterControllerInternalData internalData) => {
+//            test.cooldown -= Time.DeltaTime;
 
-            if (test.cooldown < 0) {
-                test.cooldown = random.NextFloat(minCooldown,maxCooldown);
+//            if (test.cooldown < 0) {
+//                test.cooldown = random.NextFloat(minCooldown,maxCooldown);
 
-                var randomDirection = random.NextFloat3(new float3(-1,0,-1),new float3(1,0,1));
-                randomDirection.y = 0;
-                internalData.Input.LookInputVector = randomDirection;
-                internalData.Input.Movement = new float2(0, 1);
-            }
-        });
-        Profiler.EndSample();
-    }
-}
+//                var randomDirection = random.NextFloat3(new float3(-1,0,-1),new float3(1,0,1));
+//                randomDirection.y = 0;
+//                internalData.Input.LookInputVector = randomDirection;
+//                internalData.Input.Movement = new float2(0, 1);
+//            }
+//        });
+//        Profiler.EndSample();
+//    }
+//}
