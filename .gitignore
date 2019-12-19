@@ -63,3 +63,8 @@ Example~/obj/
 Example~/Logs/
 Example~/.vscode/
 Example~/Temp/
+Example~/Packages/Microsoft.CodeAnalysis.FxCopAnalyzers.2.9.8/
+Example~/Packages/Microsoft.CodeAnalysis.VersionCheckAnalyzer.2.9.8/
+Example~/Packages/Microsoft.CodeQuality.Analyzers.2.9.8/
+Example~/Packages/Microsoft.NetCore.Analyzers.2.9.8/
+Example~/Packages/Microsoft.NetFramework.Analyzers.2.9.8/
