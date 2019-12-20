@@ -187,12 +187,12 @@ public static class CharacterControllerUtilities
         }
 
         float3 initialVelocity = groundProbeVector * (1.0f / stepInput.DeltaTime);//初速度(期望在1秒内到达目标)
-
+        UnityEngine.Debug.Log(initialVelocity.ToString());
         float3 outVelocity = initialVelocity;
         float3 outPosition = transform.pos;
         SimplexSolver.Solve(stepInput.World, stepInput.DeltaTime, stepInput.DeltaTime, stepInput.Up, stepInput.MaxMovementSpeed,
             constraints,ref outPosition, ref outVelocity, out float integratedTime, false);
-
+        UnityEngine.Debug.Log(outVelocity.ToString());
         {
             int numSupportingPlanes = 0;
             for (int i = 0; i < constraints.Length; i++) {
@@ -214,7 +214,8 @@ public static class CharacterControllerUtilities
         }
 
         {
-            if(math.lengthsq(initialVelocity - outVelocity) < k_SimplexSolverEpsilonSq) {
+
+            if (math.lengthsq(initialVelocity - outVelocity) < k_SimplexSolverEpsilonSq) {
                 //如果速度没有显著改变,那么肯定是未支持状态?
                 characterState = CharacterSupportState.Unsupported;
             }

@@ -6,6 +6,7 @@ using static CharacterControllerUtilities;
 using UnityEngine;
 using Unity.Jobs;
 using Unity.Physics;
+using static Unity.Physics.PhysicsStep;
 
 /// <summary>
 /// 角色控制器的一些配置数据
@@ -91,16 +92,44 @@ struct CharacterControllerCollider : ISystemStateComponentData
 [Serializable]
 public class CharacterControllerAuthoring : MonoBehaviour, IConvertGameObjectToEntity
 {
+    public float3 Gravity = Default.Gravity;
+
+    public float MaxSlope = 60.0f;
+
+    public int Maxiterations = 10;
+
+    public float CharacterMass = 1.0f;
+
+    public float SkinWidth = 0.02f;
+
+    public float ContactTolerance = 0.1f;
+
+    public int AffectsPhysicsBodies = 1;
+
+    public float MaxMovementSpeed = 10.0f;
+
+    public float3 GroundProbeVector = new float3(0.0f, -0.1f, 0.0f);
+
+    public float3 CapsuleCenter = new float3(0.0f, 1.0f, 0.0f);
+    public float CapsuleRaidus = 0.5f;
+    public float CapsuleHeight = 2.0f;
     public void Convert(Entity entity, EntityManager dstManager, GameObjectConversionSystem conversionSystem) {
         if(enabled) {
             dstManager.AddComponentData(entity, new CharacterControllerComponentData {
-                GroundProbeVector = new float3(0,-1,0)
+                GroundProbeVector = GroundProbeVector,
+                MaxSlope = math.radians(MaxSlope),
+                MaxIterations = Maxiterations,
+                CharacterMass = CharacterMass,
+                SkinWidth = SkinWidth,
+                ContactTolearance = ContactTolerance,
+                AffectsPhysicsBodies = AffectsPhysicsBodies,
+                MaxMovementSpeed = MaxMovementSpeed
             });
 
             dstManager.AddComponentData(entity, new CharacterControllerInitializationData { 
-                CapsuleCenter = new float3(0,1,0),
-                CapsuleRadius = 0.5f,
-                CapsuleHeight = 2.0f
+                CapsuleCenter = CapsuleCenter,
+                CapsuleHeight = CapsuleHeight,
+                CapsuleRadius = CapsuleRaidus
             });
 
             dstManager.AddComponent(entity, typeof(CharacterControllerVelocity));

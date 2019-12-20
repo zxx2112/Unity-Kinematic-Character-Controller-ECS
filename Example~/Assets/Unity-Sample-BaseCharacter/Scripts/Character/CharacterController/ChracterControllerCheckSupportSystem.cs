@@ -7,6 +7,9 @@ using Unity.Transforms;
 using Unity.Physics;
 using Unity.Physics.Systems;
 
+[DisableAutoCreation]
+[AlwaysSynchronizeSystem]
+[AlwaysUpdateSystem]
 public class ChracterControllerCheckSupportSystem : JobComponentSystem
 {
     BuildPhysicsWorld m_BuildPhysicsWorldSystem;
@@ -29,6 +32,7 @@ public class ChracterControllerCheckSupportSystem : JobComponentSystem
         var constraints = new NativeList<SurfaceConstraintInfo>(Allocator.Temp);//表面约束信息?
         var castHits = new NativeList<ColliderCastHit>(Allocator.Temp);//射线击中信息?
 
+        var deltaTime = Time.DeltaTime;
         Entities
             .WithName("CheckSupportJob")
             .ForEach((
@@ -57,7 +61,8 @@ public class ChracterControllerCheckSupportSystem : JobComponentSystem
 
                     var stepInput = new CharacterControllerUtilities.CharacterControllerStepInput {
                         World = physicsWorld,
-                        DeltaTime = time.tickInterval,
+                        //DeltaTime = time.tickInterval,
+                        DeltaTime = deltaTime,
                         Up = math.up(),//设定角色永远头朝上
                         Gravity = new float3(0.0f, -9.8f, 0.0f),
                         MaxIterations = ccData.MaxIterations,
@@ -91,6 +96,7 @@ public class ChracterControllerCheckSupportSystem : JobComponentSystem
                         out ccGroundData.SurfaceNormal,
                         out ccGroundData.SurfaceVelocity);
                 }).Run();
+
 
         constraints.Dispose();
         castHits.Dispose();
