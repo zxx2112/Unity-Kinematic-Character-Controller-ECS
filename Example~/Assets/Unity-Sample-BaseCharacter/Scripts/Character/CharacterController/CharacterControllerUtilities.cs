@@ -3,6 +3,14 @@ using Unity.Mathematics;
 using Unity.Collections;
 using UnityEngine.Assertions;
 using Unity.Physics.Extensions;
+using Unity.Entities;
+
+public struct DefferedCharacterControllerImpulse
+{
+    public Entity Entity;
+    public float3 Impulse;
+    public float3 Point;
+}
 
 public static class CharacterControllerUtilities
 {
@@ -238,6 +246,155 @@ public static class CharacterControllerUtilities
         }
     }
 
+    public static unsafe void CollideAndIntegrate(
+        CharacterControllerStepInput stepInput,float characterMass,bool affectBodies,Collider* collider,
+        ref RigidTransform transform,ref float3 linearVelocity,ref NativeStream.Writer defferredImpulseWriter,
+        ref NativeList<SurfaceConstraintInfo> constraints,ref NativeList<ColliderCastHit> castHits, ref NativeList<DistanceHit> distanceHits)
+    {
+        float deltaTime = stepInput.DeltaTime;
+        float3 up = stepInput.Up;
+        PhysicsWorld world = stepInput.World;
+
+        float remaingTIme = deltaTime;
+
+        float3 newPosition = transform.pos;
+        quaternion orientation = transform.rot;
+        float3 newVelocity = linearVelocity;
+
+        float maxSlopCos = math.cos(stepInput.MaxSlope);
+
+        const float timeEpsilon = 0.000001f;
+        for (int i = 0; i < stepInput.MaxIterations  && remaingTIme > timeEpsilon; i++) {
+
+            constraints.Clear();
+            castHits.Clear();
+            distanceHits.Clear();
+
+            //碰撞检测
+            {
+                float3 displacement = newVelocity * remaingTIme;
+                SelfFilteringAllHitsCollector<ColliderCastHit> collector = new SelfFilteringAllHitsCollector<ColliderCastHit>(stepInput.RigidBodyIndex,1.0f, ref castHits);
+                ColliderCastInput input = new ColliderCastInput() {
+                    Collider = collider,
+                    Orientation = orientation,
+                    Start = newPosition,
+                    End = newPosition + displacement
+                };
+                world.CastCollider(input, ref collector);
+
+                for (int hitIndex = 0; hitIndex < collector.NumHits; hitIndex++) {
+                    ColliderCastHit hit = collector.AllHits[hitIndex];
+                    CreateConstraint(stepInput.World, stepInput.Up,
+                        hit.RigidBodyIndex, hit.ColliderKey, hit.Position, hit.SurfaceNormal, hit.Fraction * math.length(displacement),
+                        stepInput.SkinWidth, maxSlopCos, ref constraints);
+                }
+            }
+
+            {
+                SelfFilteringAllHitsCollector<DistanceHit> distanceHitsCollector = new SelfFilteringAllHitsCollector<DistanceHit>(
+                    stepInput.RigidBodyIndex, stepInput.ContactTolerance, ref distanceHits);
+                {
+                    ColliderDistanceInput input = new ColliderDistanceInput() {
+                        MaxDistance = stepInput.ContactTolerance,
+                        Transform = transform,
+                        Collider = collider
+                    };
+                    world.CalculateDistance(input, ref distanceHitsCollector);
+                }
+
+                int numConstraints = constraints.Length;
+                for (int hitIndex = 0; hitIndex < distanceHitsCollector.NumHits; hitIndex++) {
+                    DistanceHit hit = distanceHitsCollector.AllHits[hitIndex];
+                    if(hit.Distance < stepInput.SkinWidth) {
+                        bool found = false;
+
+                        for (int constraintIndex = numConstraints - 1; constraintIndex >= 0; constraintIndex--) {
+                            SurfaceConstraintInfo constraint = constraints[constraintIndex];
+                            if(constraint.RigidBodyIndex == hit.RigidBodyIndex &&
+                                constraint.ColliderKey.Equals(hit.ColliderKey))
+                            {
+                                {
+                                    CreateConstraintFromHit(world, hit.RigidBodyIndex, hit.ColliderKey,
+                                        hit.Position, hit.SurfaceNormal, hit.Distance,
+                                        stepInput.SkinWidth, out SurfaceConstraintInfo newConstraint);
+
+                                    ResolveConstraintPenetration(ref newConstraint);
+
+                                    constraints[constraintIndex] = newConstraint;
+                                }
+
+                                found = true;
+                                break;
+                            }
+                        }
+
+                        if(!found) {
+                            CreateConstraint(stepInput.World, stepInput.Up,
+                                hit.RigidBodyIndex, hit.ColliderKey, hit.Position, hit.SurfaceNormal, hit.Distance,
+                                stepInput.SkinWidth, maxSlopCos, ref constraints);
+                        }
+                    }
+                }
+            }
+
+            float minDeltaTime = 0.0f;
+            if(math.lengthsq(newVelocity) > k_SimplexSolverEpsilonSq) {
+                minDeltaTime = 0.01f / math.length(newVelocity);
+            }
+
+            float3 preVelocity = newVelocity;
+            float3 prePosition = newPosition;
+            SimplexSolver.Solve(world, remaingTIme, minDeltaTime, up, stepInput.MaxMovementSpeed, constraints, ref newPosition, ref newVelocity, out float integratedTime);
+            
+            if(affectBodies) {
+                CalculateAndStoreDefferedImpulse(stepInput, characterMass, preVelocity, ref constraints, ref defferredImpulseWriter);
+            }
+
+            float3 newDisplacement = newPosition - prePosition;
+
+            if(math.length(newDisplacement) > k_SimpleSolverEpsion) {
+                var newCollector = new SelfFilteringClosestHitCollector<ColliderCastHit>(stepInput.RigidBodyIndex, 1.0f);
+
+                ColliderCastInput input = new ColliderCastInput() {
+                    Collider = collider,
+                    Orientation = orientation,
+                    Start = prePosition,
+                    End = prePosition + newDisplacement
+                };
+
+                world.CastCollider(input, ref newCollector);
+
+                if(newCollector.NumHits > 0) {
+                    ColliderCastHit hit = newCollector.ClosestHit;
+
+                    bool found = false;
+                    for (int constraintIndex = 0; constraintIndex < constraints.Length; constraintIndex++) {
+                        SurfaceConstraintInfo constraint = constraints[constraintIndex];
+                        if(constraint.RigidBodyIndex == hit.RigidBodyIndex && 
+                            constraint.ColliderKey.Equals(hit.ColliderKey))
+                        {
+                            found = true;
+                            break;
+                        }
+                    }
+
+                    if(!found) {
+                        Assert.IsTrue(hit.Fraction >= 0.0f && hit.Fraction <= 1.0f);
+
+                        integratedTime *= hit.Fraction;
+                        newPosition = prePosition + newDisplacement * hit.Fraction;
+                    }
+                }
+            }
+
+            remaingTIme -= integratedTime;
+        }
+
+        transform.pos = newPosition;
+        linearVelocity = newVelocity;
+    }
+
+
     private static void CreateConstraintFromHit(PhysicsWorld world, int rigidBodyIndex, ColliderKey colliderKey,
     float3 hitPosition, float3 normal, float distance, float skinWidth, out SurfaceConstraintInfo constraint) {
         bool bodyIsDynamic = 0 <= rigidBodyIndex && rigidBodyIndex < world.NumDynamicBodies;
@@ -301,5 +458,85 @@ public static class CharacterControllerUtilities
         ResolveConstraintPenetration(ref constraint);
 
         constraints.Add(constraint);
+    }
+
+    private static unsafe void CalculateAndStoreDefferedImpulse(
+        CharacterControllerStepInput stepInput,float characterMass,float3 linearVelocity,
+        ref NativeList<SurfaceConstraintInfo> constraints,ref NativeStream.Writer deferredImpulseWrtier)
+    {
+        PhysicsWorld world = stepInput.World;
+        for (int i = 0; i < constraints.Length; i++) {
+            SurfaceConstraintInfo constraint = constraints[i];
+
+            int rigidBodyIndex = constraint.RigidBodyIndex;
+            if (rigidBodyIndex < 0 || rigidBodyIndex >= world.NumDynamicBodies) {
+                continue;
+            }
+
+            RigidBody body = world.Bodies[rigidBodyIndex];
+
+            float3 pointRelvel = world.GetLinearVelocity(rigidBodyIndex, constraint.HitPosition);
+            pointRelvel -= linearVelocity;
+
+            float projectedVelocity = math.dot(pointRelvel, constraint.Plane.Normal);
+
+            float deltaVelocity = -projectedVelocity * stepInput.Damping;
+
+            float distnace = constraint.Plane.Distance;
+            if(distnace < 0.0f) {
+                deltaVelocity += (distnace / stepInput.DeltaTime) * stepInput.Tau;
+            }
+
+            MotionVelocity mv = world.MotionVelocities[rigidBodyIndex];
+            float3 impulse = float3.zero;
+            if(deltaVelocity < 0.0f) {
+                float impulseMagnitute = 0.0f;
+                {
+                    float objectMassInv = GetInvMassAtPoint(constraint.HitPosition,constraint.Plane.Normal,body,mv);
+                    impulseMagnitute = deltaVelocity / objectMassInv;
+                }
+
+                impulse = impulseMagnitute * constraint.Plane.Normal; 
+            }
+            //增加重力
+            {
+                float3 charVelDown = stepInput.Gravity * stepInput.DeltaTime;
+                float relVelN = math.dot(charVelDown, constraint.Plane.Normal);
+
+                {
+                    bool isSeparatingContact = projectedVelocity < 0.0f;
+                    float newRelVelN = relVelN - projectedVelocity;
+                    relVelN = math.select(relVelN, newRelVelN, isSeparatingContact);
+                }
+
+                {
+                    float3 newImpulse = impulse;
+                    newImpulse += relVelN * characterMass * constraint.Plane.Normal;
+                    impulse = math.select(impulse, newImpulse, relVelN < 0.0f);
+                }
+            }
+
+            deferredImpulseWrtier.Write(
+                new DefferedCharacterControllerImpulse() {
+                    Entity = body.Entity,
+                    Impulse = impulse,
+                    Point = constraint.HitPosition
+                });
+        }
+    }
+
+    private static float GetInvMassAtPoint(float3 point, float3 normal,RigidBody body,MotionVelocity mv) {
+        float3 massCenter;
+        unsafe {
+            massCenter = math.transform(body.WorldFromBody, body.Collider->MassProperties.MassDistribution.Transform.pos);
+        }
+        float3 arm = point - massCenter;
+        float3 jacAng = math.cross(arm, normal);
+        float3 armC = jacAng * mv.InverseInertiaAndMass.xyz;
+
+        float objectMassInv = math.dot(armC, jacAng);
+        objectMassInv += mv.InverseInertiaAndMass.w;
+
+        return objectMassInv;
     }
 }
