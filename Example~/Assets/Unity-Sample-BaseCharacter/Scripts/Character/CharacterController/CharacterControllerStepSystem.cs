@@ -4,11 +4,54 @@ using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Physics;
+using Unity.Physics.Extensions;
 using Unity.Physics.Systems;
+using Unity.Transforms;
 
 [AlwaysSynchronizeSystem]
 public class CharacterControllerStepSystem : JobComponentSystem
 {
+    /// <summary>
+    /// 应用冲量到其他接触的刚体
+    /// </summary>
+    [BurstCompile]
+    struct ApplyDefferedImpulses : IJob
+    {
+        public NativeStream.Reader DeferredImpulseReader;
+
+        public ComponentDataFromEntity<PhysicsVelocity> PhysicsVelocityData;
+        public ComponentDataFromEntity<PhysicsMass> PhysicsMassData;
+        public ComponentDataFromEntity<Translation> TranslationData;
+        public ComponentDataFromEntity<Rotation> RotationData;
+
+        public void Execute() {
+            int index = 0;
+            int maxIndex = DeferredImpulseReader.ForEachCount;
+            DeferredImpulseReader.BeginForEachIndex(index++);
+            while(DeferredImpulseReader.RemainingItemCount == 0 && index < maxIndex) {
+                DeferredImpulseReader.BeginForEachIndex(index++);
+            }
+
+            while(DeferredImpulseReader.RemainingItemCount > 0) {
+                var impulse = DeferredImpulseReader.Read<DefferedCharacterControllerImpulse>();
+                while(DeferredImpulseReader.RemainingItemCount == 0 && index < maxIndex) {
+                    DeferredImpulseReader.BeginForEachIndex(index++);
+                }
+
+                PhysicsVelocity pv = PhysicsVelocityData[impulse.Entity];
+                PhysicsMass pm = PhysicsMassData[impulse.Entity];
+                Translation t = TranslationData[impulse.Entity];
+                Rotation r = RotationData[impulse.Entity];
+
+                if(pm.InverseMass > 0.0f) {
+                    pv.ApplyImpulse(pm, t, r, impulse.Impulse, impulse.Point);
+
+                    PhysicsVelocityData[impulse.Entity] = pv;
+                }
+            }
+        }
+    }
+
 
     BuildPhysicsWorld m_BuildPhysicsWorld;
 
@@ -103,6 +146,14 @@ public class CharacterControllerStepSystem : JobComponentSystem
                 moveResult.MoveResult = transform.pos;
             }).Run();
 
+        var applyJob = new ApplyDefferedImpulses() {
+            DeferredImpulseReader = defferredImpulses.AsReader(),
+            PhysicsVelocityData = GetComponentDataFromEntity<PhysicsVelocity>(),
+            PhysicsMassData = GetComponentDataFromEntity<PhysicsMass>(),
+            TranslationData = GetComponentDataFromEntity<Translation>(),
+            RotationData = GetComponentDataFromEntity<Rotation>()
+        };
+        applyJob.Run();
 
         CharacterControllerDebug.input = input;
         CharacterControllerDebug.hit = hit;
