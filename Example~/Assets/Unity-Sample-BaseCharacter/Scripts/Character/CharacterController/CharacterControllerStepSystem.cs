@@ -87,6 +87,7 @@ public class CharacterControllerStepSystem : JobComponentSystem
 
         var input = new ColliderCastInput();
         var hit = new ColliderCastHit();
+        var hasHit = false;
 
         //var predictingTick = World.GetExistingSystem<GhostPredictionSystemGrouo>().PredictingTick;
 
@@ -106,6 +107,8 @@ public class CharacterControllerStepSystem : JobComponentSystem
                 //  return;
 
                 var collider = (Collider*)ccCollider.Collider.GetUnsafePtr();
+
+                velocity.Velocity = new float3(0, -100, 0);
 
                 var stepInput = new CharacterControllerUtilities.CharacterControllerStepInput {
                     World = physicWorld,
@@ -141,7 +144,8 @@ public class CharacterControllerStepSystem : JobComponentSystem
                 ref castHits,
                 ref distanceHits,
                 out input,
-                out hit);
+                out hit,
+                out hasHit);
 
                 moveResult.MoveResult = transform.pos;
             }).Run();
@@ -157,6 +161,7 @@ public class CharacterControllerStepSystem : JobComponentSystem
 
         CharacterControllerDebug.input = input;
         CharacterControllerDebug.hit = hit;
+        CharacterControllerDebug.hasHit = hasHit;
 
         defferredImpulses.Dispose();
         constraints.Dispose();
