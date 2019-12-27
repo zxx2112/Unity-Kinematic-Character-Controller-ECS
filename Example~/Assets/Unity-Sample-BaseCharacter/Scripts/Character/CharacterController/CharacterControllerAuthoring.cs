@@ -150,7 +150,8 @@ public class CharacterControllerInitAndCleanupSystem : JobComponentSystem
         //初始化角色控制器碰撞体(碰撞体为手动分配的内存,也需要手动释放)
         Entities
             .WithNone<CharacterControllerCollider>()
-            .ForEach((Entity e,ref CharacterControllerInitializationData initData) => {
+            .WithoutBurst()
+            .ForEach((Entity e, MeshContainerComponent meshContainer, ref CharacterControllerInitializationData initData) => {
                 //根据两点一半径构建胶囊几何体
                 var capsule = new CapsuleGeometry {
                     Vertex0 = initData.CapsuleCenter + new float3(0, 0.5f * initData.CapsuleHeight - initData.CapsuleRadius, 0),
@@ -159,7 +160,8 @@ public class CharacterControllerInitAndCleanupSystem : JobComponentSystem
                 };
                 //1为 1 << 0 第0层
                 var filter = new CollisionFilter { BelongsTo = 1, CollidesWith = 1, GroupIndex = 0 };
-                var collider = Unity.Physics.CapsuleCollider.Create(capsule, filter, new Unity.Physics.Material { Flags = new Unity.Physics.Material.MaterialFlags() });
+                //var collider = Unity.Physics.CapsuleCollider.Create(capsule, filter, new Unity.Physics.Material { Flags = new Unity.Physics.Material.MaterialFlags() });
+                var collider = ColliderService.CreateCollider(meshContainer.Mesh, ColliderType.Capsule);
                 ecb.AddComponent(e, new CharacterControllerCollider { Collider = collider });
             }).Run();//使用Run来单线程运行?
 

@@ -249,7 +249,7 @@ public static class CharacterControllerUtilities
     public static unsafe void CollideAndIntegrate(
         CharacterControllerStepInput stepInput,float characterMass,bool affectBodies,Collider* collider,
         ref RigidTransform transform,ref float3 linearVelocity,ref NativeStream.Writer defferredImpulseWriter,
-        ref NativeList<SurfaceConstraintInfo> constraints,ref NativeList<ColliderCastHit> castHits, ref NativeList<DistanceHit> distanceHits)
+        ref NativeList<SurfaceConstraintInfo> constraints,ref NativeList<ColliderCastHit> castHits, ref NativeList<DistanceHit> distanceHits,out ColliderCastInput debugInput,out ColliderCastHit debugHit)
     {
         float deltaTime = stepInput.DeltaTime;
         float3 up = stepInput.Up;
@@ -263,6 +263,9 @@ public static class CharacterControllerUtilities
 
         float maxSlopCos = math.cos(stepInput.MaxSlope);
 
+        debugInput = (default);
+        debugHit = (default);
+
         const float timeEpsilon = 0.000001f;
         for (int i = 0; i < stepInput.MaxIterations  && remaingTIme > timeEpsilon; i++) {
 
@@ -272,7 +275,8 @@ public static class CharacterControllerUtilities
 
             //碰撞检测
             {
-                float3 displacement = newVelocity * remaingTIme;
+                //float3 displacement = newVelocity * remaingTIme;
+                float3 displacement = new float3(0, -10, 0);
                 SelfFilteringAllHitsCollector<ColliderCastHit> collector = new SelfFilteringAllHitsCollector<ColliderCastHit>(stepInput.RigidBodyIndex,1.0f, ref castHits);
                 ColliderCastInput input = new ColliderCastInput() {
                     Collider = collider,
@@ -280,10 +284,16 @@ public static class CharacterControllerUtilities
                     Start = newPosition,
                     End = newPosition + displacement
                 };
+                if(i == 0) {
+                    debugInput = input;
+                }
                 world.CastCollider(input, ref collector);
 
                 for (int hitIndex = 0; hitIndex < collector.NumHits; hitIndex++) {
                     ColliderCastHit hit = collector.AllHits[hitIndex];
+                    if(hitIndex == 0) {
+                        debugHit = hit;
+                    }
                     CreateConstraint(stepInput.World, stepInput.Up,
                         hit.RigidBodyIndex, hit.ColliderKey, hit.Position, hit.SurfaceNormal, hit.Fraction * math.length(displacement),
                         stepInput.SkinWidth, maxSlopCos, ref constraints);

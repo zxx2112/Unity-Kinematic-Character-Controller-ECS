@@ -42,6 +42,9 @@ public class CharacterControllerStepSystem : JobComponentSystem
         var castHits = new NativeList<ColliderCastHit>(Allocator.Temp);
         var distanceHits = new NativeList<DistanceHit>(Allocator.Temp);
 
+        var input = new ColliderCastInput();
+        var hit = new ColliderCastHit();
+
         //var predictingTick = World.GetExistingSystem<GhostPredictionSystemGrouo>().PredictingTick;
 
         var deltaTime = Time.DeltaTime;
@@ -93,11 +96,16 @@ public class CharacterControllerStepSystem : JobComponentSystem
                 ref writer,
                 ref constraints,
                 ref castHits,
-                ref distanceHits);
+                ref distanceHits,
+                out input,
+                out hit);
 
                 moveResult.MoveResult = transform.pos;
             }).Run();
 
+
+        CharacterControllerDebug.input = input;
+        CharacterControllerDebug.hit = hit;
 
         defferredImpulses.Dispose();
         constraints.Dispose();
