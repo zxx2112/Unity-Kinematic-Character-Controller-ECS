@@ -10,7 +10,7 @@ using UnityEngine;
 public class ActiveUpdateSystem : ComponentSystem
 {
     protected override void OnUpdate() {
-        Entities.ForEach((Entity entity, ref CharacterControllerMoveQuery moveQuery, ref CharacterControllerVelocity velocity,ref Translation translation) => {
+        Entities.ForEach((Entity entity,ref CharacterControllerMoveQuery moveQuery, ref CharacterControllerVelocity velocity,ref Translation translation) => {
             var horizontal = Input.GetAxis("Horizontal");
             var vertical = Input.GetAxis("Vertical");
 
