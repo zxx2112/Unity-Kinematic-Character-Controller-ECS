@@ -42,7 +42,6 @@ public class CharacterControllerDebug : MonoBehaviour
         Gizmos.color = Color.red;
         Gizmos.DrawLine(input.Start, input.End);
         Gizmos.color = new Color(0.94f, 0.35f, 0.15f, 0.75f);
-        UnityEngine.Debug.Log($"{input.End - input.Start}");
         Gizmos.DrawWireMesh(mesh, localToWorld.Position, quaternion.identity);
 
         //击中位置
@@ -51,6 +50,12 @@ public class CharacterControllerDebug : MonoBehaviour
             Gizmos.DrawSphere(hit.Position, 0.02f);
             Gizmos.DrawWireMesh(mesh,
                 math.lerp(input.Start, input.End, hit.Fraction),
+                input.Orientation
+            );
+        }
+        else {
+            Gizmos.DrawWireMesh(mesh,
+                input.End,
                 input.Orientation
             );
         }

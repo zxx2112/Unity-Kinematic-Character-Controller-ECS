@@ -286,7 +286,7 @@ public static class CharacterControllerUtilities
                 };
                 if(i == 0) {
                     debugInput = input;
-                    hasHit = true;
+  
                     //UnityEngine.Debug.Log($"{input.End - input.Start}");
                 }
                 world.CastCollider(input, ref collector);
@@ -295,6 +295,7 @@ public static class CharacterControllerUtilities
                     ColliderCastHit hit = collector.AllHits[hitIndex];
                     if(hitIndex == 0) {
                         debugHit = hit;
+                        hasHit = true;
                     }
                     CreateConstraint(stepInput.World, stepInput.Up,
                         hit.RigidBodyIndex, hit.ColliderKey, hit.Position, hit.SurfaceNormal, hit.Fraction * math.length(displacement),
@@ -377,6 +378,8 @@ public static class CharacterControllerUtilities
                 world.CastCollider(input, ref newCollector);
 
                 if(newCollector.NumHits > 0) {
+                    //要到达解算后的位置仍然会与别的碰撞体相撞
+
                     ColliderCastHit hit = newCollector.ClosestHit;
 
                     bool found = false;
@@ -385,12 +388,16 @@ public static class CharacterControllerUtilities
                         if(constraint.RigidBodyIndex == hit.RigidBodyIndex && 
                             constraint.ColliderKey.Equals(hit.ColliderKey))
                         {
+                            //如果撞到的是之前处理过的碰撞体,让其通过,解算位置有效
+
                             found = true;
                             break;
                         }
                     }
 
                     if(!found) {
+                        //如果撞到的是未处理过的碰撞体,解算无效,下次迭代从碰到的位置开始
+
                         Assert.IsTrue(hit.Fraction >= 0.0f && hit.Fraction <= 1.0f);
 
                         integratedTime *= hit.Fraction;

@@ -133,8 +133,9 @@ public class CharacterControllerAuthoring : MonoBehaviour, IConvertGameObjectToE
             });
 
             dstManager.AddComponent(entity, typeof(CharacterControllerVelocity));
-            dstManager.AddComponent(entity, typeof(CharacterControllerMoveQuery));
-            dstManager.AddComponent(entity, typeof(CharacterControllerMoveResult));
+            dstManager.AddComponentData(entity, new CharacterControllerMoveQuery {StartPosition = transform.position });
+            //Debug.Log($"Set StartPosition为{transform.position}");
+            dstManager.AddComponentData(entity, new CharacterControllerMoveResult { MoveResult = transform.position });
             dstManager.AddComponent(entity, typeof(CharacterControllerGroundSupportData));
         }
     }

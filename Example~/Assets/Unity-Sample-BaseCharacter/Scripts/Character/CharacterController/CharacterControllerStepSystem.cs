@@ -101,54 +101,55 @@ public class CharacterControllerStepSystem : JobComponentSystem
                 ref CharacterControllerMoveResult moveResult,
                 ref CharacterControllerVelocity velocity
                 //in PredictedGhostComponent predictedGhostComponent
-                ) => 
-            {
-                //if(!GhostPredictionSystemGroup.ShouldPredict(PredictingTick,predictedGhostComponent))
-                //  return;
+                ) => {
+                    //if(!GhostPredictionSystemGroup.ShouldPredict(PredictingTick,predictedGhostComponent))
+                    //  return;
 
-                var collider = (Collider*)ccCollider.Collider.GetUnsafePtr();
+                    var collider = (Collider*)ccCollider.Collider.GetUnsafePtr();
 
-                velocity.Velocity = new float3(0, -100, 0);
+                    var stepInput = new CharacterControllerUtilities.CharacterControllerStepInput {
+                        World = physicWorld,
+                        //DeltaTime = time.tickDuration,
+                        DeltaTime = deltaTime,
+                        Gravity = new float3(0.0f, -9.8f, 0.0f),
+                        MaxIterations = ccData.MaxIterations,
+                        Tau = CharacterControllerUtilities.k_DefaultTau,
+                        Damping = CharacterControllerUtilities.k_DefaultDamping,
+                        SkinWidth = ccData.SkinWidth,
+                        ContactTolerance = ccData.ContactTolearance,
+                        MaxSlope = ccData.MaxSlope,
+                        RigidBodyIndex = -1,
+                        CurrentVelocity = velocity.Velocity,
+                        MaxMovementSpeed = ccData.MaxMovementSpeed,
+                        FollowGroud = moveQuery.FollowGroud
+                    };
 
-                var stepInput = new CharacterControllerUtilities.CharacterControllerStepInput {
-                    World = physicWorld,
-                    //DeltaTime = time.tickDuration,
-                    DeltaTime = deltaTime,
-                    Gravity = new float3(0.0f, -9.8f, 0.0f),
-                    MaxIterations = ccData.MaxIterations,
-                    Tau = CharacterControllerUtilities.k_DefaultTau,
-                    Damping = CharacterControllerUtilities.k_DefaultDamping,
-                    SkinWidth = ccData.SkinWidth,
-                    ContactTolerance = ccData.ContactTolearance,
-                    MaxSlope = ccData.MaxSlope,
-                    RigidBodyIndex = -1,
-                    CurrentVelocity = velocity.Velocity,
-                    MaxMovementSpeed = ccData.MaxMovementSpeed,
-                    FollowGroud = moveQuery.FollowGroud
-                };
+                    var transform = new RigidTransform {
+                        pos = moveQuery.StartPosition,
+                        rot = quaternion.identity
+                    };
+                    //UnityEngine.Debug.Log($"输入速度:{velocity.Velocity}");
+                    CharacterControllerUtilities.CollideAndIntegrate(
+                        stepInput,
+                        ccData.CharacterMass,
+                        ccData.AffectsPhysicsBodies > 0,
+                        collider,
+                        ref transform,
+                        ref velocity.Velocity,
+                        ref writer,
+                        ref constraints,
+                        ref castHits,
+                        ref distanceHits,
+                        out input,
+                        out hit,
+                        out hasHit);
 
-                var transform = new RigidTransform {
-                    pos = moveQuery.StartPosition,
-                    rot = quaternion.identity
-                };
+                    moveResult.MoveResult = transform.pos;
 
-            CharacterControllerUtilities.CollideAndIntegrate(
-                stepInput,
-                ccData.CharacterMass,
-                ccData.AffectsPhysicsBodies > 0,
-                collider,
-                ref transform,
-                ref velocity.Velocity,
-                ref writer,
-                ref constraints,
-                ref castHits,
-                ref distanceHits,
-                out input,
-                out hit,
-                out hasHit);
+                    //UnityEngine.Debug.Log($"输出速度:{velocity.Velocity}");
+                })
+            .Run();
 
-                moveResult.MoveResult = transform.pos;
-            }).Run();
 
         var applyJob = new ApplyDefferedImpulses() {
             DeferredImpulseReader = defferredImpulses.AsReader(),
