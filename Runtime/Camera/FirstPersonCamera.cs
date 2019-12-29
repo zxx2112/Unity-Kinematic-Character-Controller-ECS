@@ -4,8 +4,8 @@ using UnityEngine;
 
 public class FirstPersonCamera : MonoBehaviour
 {
-    [SerializeField] private Transform target;
-    [SerializeField] private bool syncPosition;
+    [SerializeField] private Transform target = null;
+    [SerializeField] private bool syncPosition = true;
     [SerializeField] private float yaw;
     [SerializeField] private float pitch;
     [SerializeField] private float pitchSpeed = 1;
