@@ -7,18 +7,21 @@ using Unity.Transforms;
 using static Unity.Mathematics.math;
 using UnityEngine;
 
-[UpdateBefore(typeof(ActiveUpdateSystem))] //在应用输入写读取输入
-
+//TODO:输入系统应该更方便被替换
+[UpdateBefore(typeof(ActiveUpdateSystem))]
 public class InputSystem : ComponentSystem
 {
-
+    private bool mousePitch;
+    private bool mouseYaw;
     protected override void OnCreate() {
         
     }
 
     protected override void OnUpdate() {
 
-        Entities.ForEach((Entity entity, ref UserCommand command) => {
+        Entities
+            .WithAll<ExampleInput>()
+            .ForEach((Entity entity, ref UserCommand command) => {
 
             float invertY = 1;
             var deltaTime = Time.DeltaTime;
@@ -28,13 +31,18 @@ public class InputSystem : ComponentSystem
                 deltaMousePos += new Vector2(Input.GetAxisRaw("Mouse X"), Input.GetAxisRaw("Mouse Y") * invertY);
 
             var mouseSensitivity = 1.5f;
+            if (mouseYaw)
+            {
+                command.lookYaw += deltaMousePos.x * mouseSensitivity;
+                command.lookYaw = command.lookYaw % 360;
+                while (command.lookYaw < 0.0f) command.lookYaw += 360.0f;
+            }
 
-            command.lookYaw += deltaMousePos.x * mouseSensitivity;
-            command.lookYaw = command.lookYaw % 360;
-            while (command.lookYaw < 0.0f) command.lookYaw += 360.0f;
-
-            command.lookPitch += deltaMousePos.y * mouseSensitivity;
-            command.lookPitch = Mathf.Clamp(command.lookPitch, 0, 180);
+            if (mousePitch)
+            {
+                command.lookPitch += deltaMousePos.y * mouseSensitivity;
+                command.lookPitch = Mathf.Clamp(command.lookPitch, 0, 180);
+            }
 
             var horizontalInput = Input.GetAxis("Horizontal");
             var verticalInput = Input.GetAxis("Vertical");

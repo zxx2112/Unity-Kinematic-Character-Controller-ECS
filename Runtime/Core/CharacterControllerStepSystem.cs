@@ -115,7 +115,7 @@ public class CharacterControllerStepSystem : JobComponentSystem
                         ContactTolerance = ccData.ContactTolearance,
                         MaxSlope = ccData.MaxSlope,
                         RigidBodyIndex = -1,
-                        CurrentVelocity = velocity.Velocity,
+                        CurrentVelocity = velocity.WorldVelocity,
                         MaxMovementSpeed = ccData.MaxMovementSpeed,
                         FollowGroud = moveQuery.FollowGroud
                     };
@@ -131,14 +131,13 @@ public class CharacterControllerStepSystem : JobComponentSystem
                         ccData.AffectsPhysicsBodies > 0,
                         collider,
                         ref transform,
-                        ref velocity.Velocity,
+                        ref velocity.WorldVelocity,
                         ref writer,
                         ref constraints,
                         ref castHits,
                         ref distanceHits,
                         out input,
-                        out hit,
-                        out hasHit);
+                        out hit);
 
                     moveResult.MoveResult = transform.pos;
                 })
@@ -156,7 +155,6 @@ public class CharacterControllerStepSystem : JobComponentSystem
 
         CharacterControllerDebug.input = input;
         CharacterControllerDebug.hit = hit;
-        CharacterControllerDebug.hasHit = hasHit;
 
         defferredImpulses.Dispose();
         constraints.Dispose();

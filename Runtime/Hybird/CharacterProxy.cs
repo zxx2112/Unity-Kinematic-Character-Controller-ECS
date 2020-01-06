@@ -6,5 +6,6 @@ using Unity.Mathematics;
 [Serializable]
 public struct CharacterProxy : IComponentData
 {
-
+    public bool SyncPitchRotation;
+    public bool SyncYawRotation;
 }

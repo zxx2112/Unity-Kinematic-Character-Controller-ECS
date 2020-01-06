@@ -249,7 +249,7 @@ public static class CharacterControllerUtilities
     public static unsafe void CollideAndIntegrate(
         CharacterControllerStepInput stepInput,float characterMass,bool affectBodies,Collider* collider,
         ref RigidTransform transform,ref float3 linearVelocity,ref NativeStream.Writer defferredImpulseWriter,
-        ref NativeList<SurfaceConstraintInfo> constraints,ref NativeList<ColliderCastHit> castHits, ref NativeList<DistanceHit> distanceHits,out ColliderCastInput debugInput,out ColliderCastHit debugHit,out bool hasHit)
+        ref NativeList<SurfaceConstraintInfo> constraints,ref NativeList<ColliderCastHit> castHits, ref NativeList<DistanceHit> distanceHits,out ColliderCastInput debugInput,out ColliderCastHit debugHit)
     {
         float deltaTime = stepInput.DeltaTime;
         float3 up = stepInput.Up;
@@ -265,7 +265,7 @@ public static class CharacterControllerUtilities
 
         debugInput = (default);
         debugHit = (default);
-        hasHit = false;
+
 
         const float timeEpsilon = 0.000001f;
         for (int i = 0; i < stepInput.MaxIterations  && remaingTIme > timeEpsilon; i++) {
@@ -295,7 +295,6 @@ public static class CharacterControllerUtilities
                     ColliderCastHit hit = collector.AllHits[hitIndex];
                     if(hitIndex == 0) {
                         debugHit = hit;
-                        hasHit = true;
                     }
                     CreateConstraint(stepInput.World, stepInput.Up,
                         hit.RigidBodyIndex, hit.ColliderKey, hit.Position, hit.SurfaceNormal, hit.Fraction * math.length(displacement),

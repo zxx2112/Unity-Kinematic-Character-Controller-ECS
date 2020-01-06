@@ -72,7 +72,7 @@ public class ChracterControllerCheckSupportSystem : JobComponentSystem
                         ContactTolerance = ccData.ContactTolearance * 2.0f,
                         MaxSlope = ccData.MaxSlope,
                         RigidBodyIndex = -1,
-                        CurrentVelocity = velocity.Velocity,
+                        CurrentVelocity = velocity.WorldVelocity,
                         MaxMovementSpeed = ccData.MaxMovementSpeed
                     };
 

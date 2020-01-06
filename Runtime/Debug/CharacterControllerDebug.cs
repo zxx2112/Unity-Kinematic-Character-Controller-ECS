@@ -1,10 +1,13 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using Unity.Collections;
 using UnityEngine;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
 using Unity.Physics;
+using Math = System.Math;
 
 public class CharacterControllerDebug : MonoBehaviour
 {
@@ -15,7 +18,6 @@ public class CharacterControllerDebug : MonoBehaviour
 
     public static ColliderCastInput input;
     public static ColliderCastHit hit;
-    public static bool hasHit;
 
     EntityQuery CharacterControllerQuery;
 
@@ -25,7 +27,8 @@ public class CharacterControllerDebug : MonoBehaviour
     private void Start() {
         CharacterControllerQuery = World.DefaultGameObjectInjectionWorld.EntityManager.CreateEntityQuery(
             typeof(CharacterControllerComponentData),
-            typeof(LocalToWorld));
+            typeof(LocalToWorld),
+            typeof(CharacterControllerInitializationData));
 
         Simulating = true;
     }
@@ -35,33 +38,53 @@ public class CharacterControllerDebug : MonoBehaviour
 
         if (CharacterControllerQuery.CalculateEntityCount() == 0) return;
 
-        var localToWorldArray = CharacterControllerQuery.ToComponentDataArray<LocalToWorld>(Unity.Collections.Allocator.TempJob);
+        var localToWorldArray = CharacterControllerQuery.ToComponentDataArray<LocalToWorld>(Allocator.TempJob);
+        var initDataArray = CharacterControllerQuery.ToComponentDataArray<CharacterControllerInitializationData>(Allocator.TempJob);
         var localToWorld = localToWorldArray[0];
+        var initData = initDataArray[0];
 
-        //开始查询位置
-        Gizmos.color = Color.red;
-        Gizmos.DrawLine(input.Start, input.End);
-        Gizmos.color = new Color(0.94f, 0.35f, 0.15f, 0.75f);
-        Gizmos.DrawWireMesh(mesh, localToWorld.Position, quaternion.identity);
+        try
+        {
+            //开始查询位置
+            Gizmos.color = Color.red;
+            Gizmos.DrawLine(input.Start, input.End);
+            Gizmos.color = new Color(0.94f, 0.35f, 0.15f, 0.75f);
+            Gizmos.DrawWireMesh(mesh, localToWorld.Position + initData.CapsuleCenter, quaternion.identity);
 
-        //击中位置
-        if (hasHit) {
-            Gizmos.color = Color.magenta;
-            Gizmos.DrawSphere(hit.Position, 0.02f);
-            Gizmos.DrawWireMesh(mesh,
-                math.lerp(input.Start, input.End, hit.Fraction),
-                input.Orientation
-            );
+            //击中位置
+            if (true) {
+                Gizmos.color = Color.magenta;
+                Gizmos.DrawSphere(hit.Position, 0.02f);
+                // Gizmos.DrawWireMesh(mesh,
+                //     math.lerp(input.Start, input.End, hit.Fraction),
+                //     input.Orientation
+                // );
+            }
+            else {
+                if(Math.Abs(input.Orientation.value.w) < 0.001f)
+                    input.Orientation = quaternion.identity;
+            
+                Gizmos.DrawWireMesh(mesh,
+                    input.End,
+                    input.Orientation
+                );
+            }
+
         }
-        else {
-            Gizmos.DrawWireMesh(mesh,
-                input.End,
-                input.Orientation
-            );
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
+        finally
+        {
+            localToWorldArray.Dispose();
+            initDataArray.Dispose();
         }
 
 
-        localToWorldArray.Dispose();
+
+
 
     }
 }

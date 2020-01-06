@@ -11,10 +11,10 @@ public class ActiveUpdateSystem : ComponentSystem
 {
     protected override void OnUpdate() {
         Entities.ForEach((Entity entity,ref UserCommand userCommand,ref CharacterControllerMoveQuery moveQuery, ref CharacterControllerVelocity velocity,ref Translation translation) => {
-
+            
             var newVelocity = CalculateVelocity(Time.DeltaTime, userCommand,velocity);
 
-            velocity.Velocity = newVelocity;
+            velocity.WorldVelocity = newVelocity;
 
             moveQuery.StartPosition = translation.Value;
         });
@@ -26,7 +26,7 @@ public class ActiveUpdateSystem : ComponentSystem
         float acceleration = 15;
         var friction = 12;
 
-        var velocity = lastVelocity.Velocity;
+        var velocity = lastVelocity.WorldVelocity;
 
         //velocity.y = 0;
         //InAir

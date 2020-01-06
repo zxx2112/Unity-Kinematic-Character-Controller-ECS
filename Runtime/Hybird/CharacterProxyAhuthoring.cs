@@ -8,8 +8,11 @@ public class CharacterProxyAhuthoring : MonoBehaviour,IConvertGameObjectToEntity
 {
     [SerializeField] private GameObject characterTarget = null;
 
+    [SerializeField] private bool syncPitchRotation;
+    [SerializeField] private bool syncYawRotation;
+
     public void Convert(Entity entity, EntityManager dstManager, GameObjectConversionSystem conversionSystem) {
-        dstManager.AddComponentData(entity, new CharacterProxy());
+        dstManager.AddComponentData(entity, new CharacterProxy(){SyncPitchRotation = syncPitchRotation,SyncYawRotation = syncYawRotation});
     }
 
     private void Update() {

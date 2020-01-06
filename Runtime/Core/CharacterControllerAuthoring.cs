@@ -67,7 +67,8 @@ public struct CharacterControllerMoveResult : IComponentData
 /// </summary>
 public struct CharacterControllerVelocity : IComponentData
 {
-    public float3 Velocity;
+    public float3 LocalVelocity;
+    public float3 WorldVelocity;
 }
 
 /// <summary>
@@ -88,6 +89,10 @@ struct CharacterControllerCollider : ISystemStateComponentData
     public BlobAssetReference<Unity.Physics.Collider> Collider;
 }
 
+public struct ExampleInput : IComponentData
+{
+    
+}
 
 [Serializable]
 public class CharacterControllerAuthoring : MonoBehaviour, IConvertGameObjectToEntity
@@ -113,6 +118,8 @@ public class CharacterControllerAuthoring : MonoBehaviour, IConvertGameObjectToE
     public float3 CapsuleCenter = new float3(0.0f, 1.0f, 0.0f);
     public float CapsuleRaidus = 0.5f;
     public float CapsuleHeight = 2.0f;
+
+    public bool useExampleInput;
     public void Convert(Entity entity, EntityManager dstManager, GameObjectConversionSystem conversionSystem) {
         if(enabled) {
             dstManager.AddComponentData(entity, new CharacterControllerComponentData {
@@ -138,6 +145,11 @@ public class CharacterControllerAuthoring : MonoBehaviour, IConvertGameObjectToE
             dstManager.AddComponentData(entity, new CharacterControllerMoveResult { MoveResult = transform.position });
             dstManager.AddComponent(entity, typeof(CharacterControllerGroundSupportData));
             dstManager.AddComponentData(entity, new UserCommand());
+
+            if (useExampleInput)
+            {
+                dstManager.AddComponentData(entity, new ExampleInput());
+            }
         }
     }
 }
@@ -162,8 +174,8 @@ public class CharacterControllerInitAndCleanupSystem : JobComponentSystem
                 };
                 //1为 1 << 0 第0层
                 var filter = new CollisionFilter { BelongsTo = 1, CollidesWith = 1, GroupIndex = 0 };
-                //var collider = Unity.Physics.CapsuleCollider.Create(capsule, filter, new Unity.Physics.Material { Flags = new Unity.Physics.Material.MaterialFlags() });
-                var collider = ColliderService.CreateCollider(meshContainer.Mesh, ColliderType.Capsule);
+                var collider = Unity.Physics.CapsuleCollider.Create(capsule, filter, new Unity.Physics.Material { Flags = new Unity.Physics.Material.MaterialFlags() });
+                //var collider = ColliderService.CreateCollider(meshContainer.Mesh, ColliderType.Capsule);
                 ecb.AddComponent(e, new CharacterControllerCollider { Collider = collider });
             }).Run();//使用Run来单线程运行?
 
